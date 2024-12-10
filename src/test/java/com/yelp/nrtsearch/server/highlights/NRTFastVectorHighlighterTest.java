@@ -25,6 +25,8 @@ import com.google.protobuf.UInt32Value;
 import com.yelp.nrtsearch.server.ServerTestCase;
 import com.yelp.nrtsearch.server.grpc.AddDocumentRequest;
 import com.yelp.nrtsearch.server.grpc.AddDocumentRequest.MultiValuedField;
+import com.yelp.nrtsearch.server.grpc.BooleanClause;
+import com.yelp.nrtsearch.server.grpc.BooleanQuery;
 import com.yelp.nrtsearch.server.grpc.FieldDefRequest;
 import com.yelp.nrtsearch.server.grpc.Highlight;
 import com.yelp.nrtsearch.server.grpc.Highlight.Settings;
@@ -65,7 +67,8 @@ public class NRTFastVectorHighlighterTest extends ServerTestCase {
             .putFields(
                 "comment",
                 MultiValuedField.newBuilder()
-                    .addValue("the food here is amazing, service was good")
+                    .addValue(
+                        "the food here is amazing , the service is amazing , the environment is great , but music is just ok .")
                     .build())
             .putFields(
                 "comment2",
@@ -149,6 +152,59 @@ public class NRTFastVectorHighlighterTest extends ServerTestCase {
     assertThat(response.getHits(1).getHighlightsMap().get("comment").getFragments(0))
         .isEqualTo(
             "restaurant. The <em>food</em> here is pretty good, the service could be better. My favorite <em>food</em> was chilly chicken");
+    assertThat(response.getDiagnostics().getHighlightTimeMs()).isGreaterThan(0);
+  }
+
+  @Test
+  public void testTopOnly() {
+    Highlight highlight =
+        Highlight.newBuilder()
+            .addFields("comment")
+            .setSettings(
+                Settings.newBuilder()
+                    .setHighlighterType(Type.FAST_VECTOR)
+                    .setHighlightQuery(
+                        Query.newBuilder()
+                            .setBooleanQuery(
+                                BooleanQuery.newBuilder()
+                                    .addClauses(
+                                        BooleanClause.newBuilder()
+                                            .setOccur(BooleanClause.Occur.MUST)
+                                            .setQuery(
+                                                Query.newBuilder()
+                                                    .setMatchQuery(
+                                                        MatchQuery.newBuilder()
+                                                            .setField("comment")
+                                                            .setQuery("amazing"))
+                                                    .setBoost(3f)))
+                                    .addClauses(
+                                        BooleanClause.newBuilder()
+                                            .setOccur(BooleanClause.Occur.MUST)
+                                            .setQuery(
+                                                Query.newBuilder()
+                                                    .setMatchQuery(
+                                                        MatchQuery.newBuilder()
+                                                            .setField("comment")
+                                                            .setQuery("great"))
+                                                    .setBoost(3f)))
+                                    .addClauses(
+                                        BooleanClause.newBuilder()
+                                            .setOccur(BooleanClause.Occur.MUST)
+                                            .setQuery(
+                                                Query.newBuilder()
+                                                    .setMatchQuery(
+                                                        MatchQuery.newBuilder()
+                                                            .setField("comment")
+                                                            .setQuery("ok"))
+                                                    .setBoost(1f)))))
+                    .setScoreOrdered(BoolValue.of(true)))
+            .build();
+    SearchResponse response = doHighlightQuery(highlight);
+
+    assertThat(response.getHits(1).getHighlightsMap().get("comment").getFragments(0))
+        .isEqualTo(
+            "food here is <em>amazing</em> , the service is <em>amazing</em> , the environment is <em>great</em> , but music is just ok .");
+
     assertThat(response.getDiagnostics().getHighlightTimeMs()).isGreaterThan(0);
   }
 

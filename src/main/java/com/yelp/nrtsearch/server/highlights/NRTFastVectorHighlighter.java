@@ -126,6 +126,7 @@ public class NRTFastVectorHighlighter implements Highlighter {
       fragmentsBuilder = new SimpleFragmentsBuilder(boundaryScanner);
     }
     fragmentsBuilder.setDiscreteMultiValueHighlighting(settings.getDiscreteMultivalue());
+    fragmentsBuilder =  new TopPhraseOnlyBaseFragmentsBuilderAdaptor(fragmentsBuilder);
 
     try {
       return FAST_VECTOR_HIGHLIGHTER.getBestFragments(
