@@ -19,13 +19,13 @@ import com.yelp.nrtsearch.server.config.LuceneServerConfiguration;
 import com.yelp.nrtsearch.server.grpc.DeadlineUtils;
 import com.yelp.nrtsearch.server.grpc.IndexLiveSettings;
 import com.yelp.nrtsearch.server.grpc.ReplicationServerClient;
-import com.yelp.nrtsearch.server.luceneserver.SearchHandler.SearchHandlerException;
 import com.yelp.nrtsearch.server.luceneserver.field.FieldDef;
 import com.yelp.nrtsearch.server.luceneserver.field.IndexableFieldDef.FacetValueType;
 import com.yelp.nrtsearch.server.luceneserver.field.properties.GlobalOrdinalable;
 import com.yelp.nrtsearch.server.luceneserver.index.IndexStateManager;
 import com.yelp.nrtsearch.server.luceneserver.index.NrtIndexWriter;
 import com.yelp.nrtsearch.server.luceneserver.warming.WarmerConfig;
+import com.yelp.nrtsearch.server.luceneserver.warming.WarmingService;
 import com.yelp.nrtsearch.server.monitoring.IndexMetrics;
 import com.yelp.nrtsearch.server.utils.FileUtil;
 import com.yelp.nrtsearch.server.utils.HostPort;
@@ -993,10 +993,11 @@ public class ShardState implements Closeable {
       new Thread(keepAlive, "KeepAlive").start();
 
       WarmerConfig warmerConfig = configuration.getWarmerConfig();
-      if (warmerConfig.isWarmOnStartup() && indexState.getWarmer() != null) {
+      if (warmerConfig.isWarmOnStartup()) {
+        WarmingService.getINSTANCE().warm(indexState);
         try {
-          indexState.getWarmer().warmFromS3(indexState, warmerConfig.getWarmingParallelism());
-        } catch (SearchHandlerException | InterruptedException e) {
+          WarmingService.getINSTANCE().close();
+        } catch (InterruptedException e) {
           throw new RuntimeException(e);
         }
       }

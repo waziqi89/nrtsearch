@@ -30,8 +30,7 @@ import com.yelp.nrtsearch.server.luceneserver.field.ObjectFieldDef;
 import com.yelp.nrtsearch.server.luceneserver.field.TextBaseFieldDef;
 import com.yelp.nrtsearch.server.luceneserver.field.properties.GlobalOrdinalable;
 import com.yelp.nrtsearch.server.luceneserver.index.IndexSimilarity;
-import com.yelp.nrtsearch.server.luceneserver.warming.Warmer;
-import com.yelp.nrtsearch.server.luceneserver.warming.WarmerConfig;
+import com.yelp.nrtsearch.server.luceneserver.warming.*;
 import com.yelp.nrtsearch.server.utils.FileUtil;
 import java.io.Closeable;
 import java.io.IOException;
@@ -86,7 +85,7 @@ public abstract class IndexState implements Closeable {
   private static final Pattern reSimpleName = Pattern.compile("^[a-zA-Z_][a-zA-Z_0-9]*$");
   private final ThreadPoolExecutor searchThreadPoolExecutor;
   private final ExecutorService fetchThreadPoolExecutor;
-  private Warmer warmer = null;
+  private S3QueryWarmer s3QueryWarmer = null;
 
   /** The meta field definitions */
   private static Map<String, FieldDef> metaFields;
@@ -251,13 +250,17 @@ public abstract class IndexState implements Closeable {
   public void initWarmer(Archiver archiver, String indexName) {
     LuceneServerConfiguration configuration = globalState.getConfiguration();
     WarmerConfig warmerConfig = configuration.getWarmerConfig();
-    if (warmerConfig.isWarmOnStartup() || warmerConfig.getMaxWarmingQueries() > 0) {
-      this.warmer =
-          new Warmer(
-              archiver,
-              configuration.getServiceName(),
-              indexName,
-              warmerConfig.getMaxWarmingQueries());
+    if (warmerConfig.isWarmOnStartup()) {
+      List<Warmer> warmers = new ArrayList<>();
+      if (warmerConfig.getMaxWarmingQueries() > 0) {
+        s3QueryWarmer =
+            new S3QueryWarmer(archiver, configuration.getServiceName(), indexName, warmerConfig.getMaxWarmingQueries());
+        warmers.add(s3QueryWarmer);
+      }
+      // always add SegmentPreloadWarmer
+      warmers.add(new SegmentPreloadWarmer());
+      WarmingService instance = WarmingService.getINSTANCE();
+      instance.initialize(configuration, warmers);
     }
   }
 
@@ -292,8 +295,8 @@ public abstract class IndexState implements Closeable {
   }
 
   /** Get query warmer to use during index start. */
-  public Warmer getWarmer() {
-    return warmer;
+  public S3QueryWarmer getS3QueryWarmer() {
+    return s3QueryWarmer;
   }
 
   /**

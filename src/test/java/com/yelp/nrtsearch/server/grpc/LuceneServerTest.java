@@ -953,7 +953,10 @@ public class LuceneServerTest {
         .getIndex(replicaGrpcServer.getTestIndex())
         .initWarmer(archiver);
     assertNotNull(
-        replicaGrpcServer.getGlobalState().getIndex(replicaGrpcServer.getTestIndex()).getWarmer());
+        replicaGrpcServer
+            .getGlobalState()
+            .getIndex(replicaGrpcServer.getTestIndex())
+            .getS3QueryWarmer());
     // Average case should pass
     replicaGrpcServer
         .getBlockingStub()

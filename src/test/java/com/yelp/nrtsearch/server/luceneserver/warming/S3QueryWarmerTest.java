@@ -42,7 +42,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-public class WarmerTest {
+public class S3QueryWarmerTest {
 
   private final String service = "test_service";
   private final String index = "test_index";
@@ -50,7 +50,7 @@ public class WarmerTest {
   private final String bucketName = "warmer-unittest";
   private Archiver archiver;
   private AmazonS3 s3;
-  private Warmer warmer;
+  private S3QueryWarmer s3QueryWarmer;
 
   @Rule public final TemporaryFolder folder = new TemporaryFolder();
   @Rule public final AmazonS3Provider s3Provider = new AmazonS3Provider(bucketName);
@@ -63,16 +63,16 @@ public class WarmerTest {
     archiver =
         new ArchiverImpl(
             s3, bucketName, archiverDirectory, new TarImpl(TarImpl.CompressionMode.LZ4));
-    warmer = new Warmer(archiver, service, index, 2);
+    s3QueryWarmer = new S3QueryWarmer(archiver, service, index, 2);
   }
 
   @Test
   public void testAddSearchRequest_backupWarmingQueriesToS3() throws IOException {
     List<SearchRequest> testRequests = getTestSearchRequests();
 
-    testRequests.forEach(warmer::addSearchRequest);
+    testRequests.forEach(s3QueryWarmer::addSearchRequest);
 
-    warmer.backupWarmingQueriesToS3(service);
+    s3QueryWarmer.backupWarmingQueriesToS3(service);
 
     Path downloadPath = archiver.download(service, resource);
 
@@ -102,7 +102,7 @@ public class WarmerTest {
     IndexState mockIndexState = mock(IndexState.class);
     SearchHandler mockSearchHandler = mock(SearchHandler.class);
 
-    warmer.warmFromS3(mockIndexState, 0, mockSearchHandler);
+    s3QueryWarmer.warmFromS3(mockIndexState, 0, mockSearchHandler);
 
     for (SearchRequest testRequest : getTestSearchRequests()) {
       verify(mockSearchHandler).handle(mockIndexState, testRequest);
@@ -130,8 +130,8 @@ public class WarmerTest {
     IndexState mockIndexState = mock(IndexState.class);
     SearchHandler mockSearchHandler = mock(SearchHandler.class);
 
-    warmer.warmFromS3(mockIndexState, 0, mockSearchHandler);
-    warmer.warmFromS3(mockIndexState, 0, mockSearchHandler);
+    s3QueryWarmer.warmFromS3(mockIndexState, 0, mockSearchHandler);
+    s3QueryWarmer.warmFromS3(mockIndexState, 0, mockSearchHandler);
 
     for (SearchRequest testRequest : getTestSearchRequests()) {
       verify(mockSearchHandler, times(2)).handle(mockIndexState, testRequest);
@@ -164,7 +164,7 @@ public class WarmerTest {
     IndexState mockIndexState = mock(IndexState.class);
     SearchHandler mockSearchHandler = mock(SearchHandler.class);
 
-    warmer.warmFromS3(mockIndexState, 3, mockSearchHandler);
+    s3QueryWarmer.warmFromS3(mockIndexState, 3, mockSearchHandler);
 
     for (SearchRequest testRequest : getTestSearchRequests()) {
       verify(mockSearchHandler, times(warmingCountPerQuery)).handle(mockIndexState, testRequest);

@@ -290,8 +290,8 @@ public class SearchHandler implements Handler<SearchRequest, SearchResponse> {
 
     // Add searchRequest to warmer if needed
     try {
-      if (!warming && indexState.getWarmer() != null) {
-        indexState.getWarmer().addSearchRequest(searchRequest);
+      if (!warming && indexState.getS3QueryWarmer() != null) {
+        indexState.getS3QueryWarmer().addSearchRequest(searchRequest);
       }
     } catch (Exception e) {
       logger.error("Unable to add warming query", e);

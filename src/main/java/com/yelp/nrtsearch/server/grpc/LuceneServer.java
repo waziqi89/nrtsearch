@@ -55,7 +55,7 @@ import com.yelp.nrtsearch.server.luceneserver.search.FetchTaskCreator;
 import com.yelp.nrtsearch.server.luceneserver.search.cache.NrtQueryCache;
 import com.yelp.nrtsearch.server.luceneserver.search.collectors.CollectorCreator;
 import com.yelp.nrtsearch.server.luceneserver.similarity.SimilarityCreator;
-import com.yelp.nrtsearch.server.luceneserver.warming.Warmer;
+import com.yelp.nrtsearch.server.luceneserver.warming.S3QueryWarmer;
 import com.yelp.nrtsearch.server.monitoring.*;
 import com.yelp.nrtsearch.server.monitoring.ThreadPoolCollector.RejectionCounterWrapper;
 import com.yelp.nrtsearch.server.plugins.Plugin;
@@ -1633,8 +1633,8 @@ public class LuceneServer {
       String index = request.getIndex();
       try {
         IndexState indexState = globalState.getIndex(index);
-        Warmer warmer = indexState.getWarmer();
-        if (warmer == null) {
+        S3QueryWarmer s3QueryWarmer = indexState.getS3QueryWarmer();
+        if (s3QueryWarmer == null) {
           logger.warn("Unable to backup warming queries as warmer not found for index: {}", index);
           responseObserver.onError(
               Status.UNKNOWN
@@ -1644,7 +1644,7 @@ public class LuceneServer {
           return;
         }
         int numQueriesThreshold = request.getNumQueriesThreshold();
-        int numWarmingRequests = warmer.getNumWarmingRequests();
+        int numWarmingRequests = s3QueryWarmer.getNumWarmingRequests();
         if (numQueriesThreshold > 0 && numWarmingRequests < numQueriesThreshold) {
           logger.warn(
               "Unable to backup warming queries since warmer has {} requests, which is less than threshold {}",
@@ -1676,7 +1676,7 @@ public class LuceneServer {
                   .asRuntimeException());
           return;
         }
-        warmer.backupWarmingQueriesToS3(request.getServiceName());
+        s3QueryWarmer.backupWarmingQueriesToS3(request.getServiceName());
         responseObserver.onNext(BackupWarmingQueriesResponse.newBuilder().build());
         responseObserver.onCompleted();
       } catch (IOException e) {

@@ -20,7 +20,7 @@ import static org.junit.Assert.assertEquals;
 
 import com.google.protobuf.util.JsonFormat;
 import com.yelp.nrtsearch.server.config.IndexStartConfig.IndexDataLocationType;
-import com.yelp.nrtsearch.server.luceneserver.warming.Warmer;
+import com.yelp.nrtsearch.server.luceneserver.warming.S3QueryWarmer;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -86,7 +86,7 @@ public class WarmingQueriesTest {
             .download(
                 SERVICE_NAME,
                 server.getGlobalState().getDataResourceForIndex("test_index")
-                    + Warmer.WARMING_QUERIES_RESOURCE);
+                    + S3QueryWarmer.WARMING_QUERIES_RESOURCE);
 
     Path warmingQueriesDir = downloadPath.resolve("warming_queries");
     Path warmingQueriesFile = warmingQueriesDir.resolve("warming_queries.txt");
