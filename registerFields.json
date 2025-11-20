@@ -1,0 +1,8 @@
+{
+  "indexName": "testIdx",
+  "field":
+  [
+    { "name": "id", "type": "ATOM", "storeDocValues": true},
+    { "name": "redis_key", "type": "TEXT" , "search": true, "storeDocValues": true}
+  ]
+}

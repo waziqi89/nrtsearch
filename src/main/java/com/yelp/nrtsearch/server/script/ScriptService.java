@@ -25,6 +25,7 @@ import com.yelp.nrtsearch.server.grpc.Script;
 import com.yelp.nrtsearch.server.plugins.Plugin;
 import com.yelp.nrtsearch.server.plugins.ScriptPlugin;
 import com.yelp.nrtsearch.server.script.js.JsScriptEngine;
+import com.yelp.nrtsearch.server.script.redis.RedisScriptEngine;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -56,6 +57,8 @@ public class ScriptService {
   private ScriptService(NrtsearchConfig configuration) {
     // add provided javascript engine
     scriptEngineMap.put("js", new JsScriptEngine());
+    // add redis script engine
+    scriptEngineMap.put("redis", new RedisScriptEngine());
 
     ScriptCacheConfig scriptCacheConfig = configuration.getScriptCacheConfig();
     scriptCache =

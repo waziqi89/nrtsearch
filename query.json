@@ -1,0 +1,17 @@
+{
+  "indexName": "testIdx",
+  "topHits": 10,
+  "runtimeFields": [{
+    "name": "redis_rtf",
+    "script": {
+      "lang": "redis",
+      "source": "localhost:6379",
+      "params": {
+        "redisKeyField": {
+          "textValue": "redis_key"
+        }
+      }
+    }
+  }],
+  "retrieveFields": ["id", "redis_key", "redis_rtf"]
+}

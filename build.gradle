@@ -82,6 +82,7 @@ dependencies {
     implementation libs.jackson.databind
     implementation libs.jackson.dataformat.yaml
     implementation libs.jakarta.xml.bind.api
+    implementation 'redis.clients:jedis:4.4.3'
     implementation libs.lz4.java
     implementation libs.snakeyaml
 
@@ -102,6 +103,7 @@ startScripts.enabled = false
 
 task luceneServer(type: CreateStartScripts) {
     mainClass = 'com.yelp.nrtsearch.server.grpc.NrtsearchServer'
+
     applicationName = 'lucene-server'
     outputDir = new File(project.buildDir, 'tmp-app')
     classpath = startScripts.classpath
@@ -118,6 +120,7 @@ task luceneServerClient(type: CreateStartScripts) {
 
 task nrtsearchServer(type: CreateStartScripts) {
     mainClass = 'com.yelp.nrtsearch.server.grpc.NrtsearchServer'
+    defaultJvmOpts = ['-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005']
     applicationName = 'nrtsearch_server'
     outputDir = new File(project.buildDir, 'tmp-app')
     classpath = startScripts.classpath
